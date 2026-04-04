@@ -1,0 +1,22 @@
+[project]
+name = "newsdigest"
+version = "0.1.0"
+description = "Skill-based news collection and report generation tool"
+requires-python = ">=3.10"
+readme = "README.md"
+
+[project.dependencies]
+anthropic = ">=0.18.0"
+beautifulsoup4 = ">=4.12.0"
+requests = ">=2.31.0"
+pyyaml = ">=6.0"
+python-dateutil = ">=2.8.0"
+aiohttp = ">=3.9.0"
+lxml = ">=4.9.0"
+
+[project.scripts]
+newsdigest = "main:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

@@ -1,0 +1,18 @@
+# Global configuration for NewsDigest
+
+# Claude API settings
+claude:
+  api_key_env: ANTHROPIC_API_KEY
+  model: claude-sonnet-4-6
+  max_tokens: 4096
+
+# Output settings
+output:
+  directory: ./output/reports
+  date_format: "%Y-%m-%d"
+  time_format: "%H:%M"
+
+# Logging
+logging:
+  level: INFO
+  file: ./logs/newsdigest.log

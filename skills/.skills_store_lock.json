@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "clawdhub": {
+      "name": "Clawdhub",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=clawdhub",
+      "source": "skillhub",
+      "version": "1.0.0"
+    },
+    "wechat-article-search": {
+      "name": "Wechat Article Search",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=wechat-article-search",
+      "source": "skillhub",
+      "version": "0.1.0"
+    },
+    "cn-web-search": {
+      "name": "CN Web Search",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=cn-web-search",
+      "source": "skillhub",
+      "version": "2.0.0"
+    }
+  }
+}
