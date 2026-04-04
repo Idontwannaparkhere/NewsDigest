@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财政科学管理资讯汇总</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>财政科学管理资讯汇总</h1>
+            <p class="subtitle">实时追踪各地财政科学管理试点工作进展</p>
+        </header>
+
+        <main>
+            <section class="quick-access">
+                <a href="/latest" class="btn-primary">查看最新报告</a>
+            </section>
+
+            {% if reports %}
+            <section class="reports-list">
+                <h2>历史报告</h2>
+                <div class="report-grid">
+                    {% for report in reports %}
+                    <a href="/report/{{ report.filename }}" class="report-card">
+                        <div class="report-date">{{ report.date }}</div>
+                        <div class="report-stats">
+                            {% if report.overview.articles %}
+                            <span class="stat-item">
+                                <span class="stat-label">文章</span>
+                                <span class="stat-value">{{ report.overview.articles }}篇</span>
+                            </span>
+                            {% endif %}
+                            {% if report.overview.pilots %}
+                            <span class="stat-item">
+                                <span class="stat-label">试点</span>
+                                <span class="stat-value">{{ report.overview.pilots }}项</span>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </section>
+            {% else %}
+            <section class="no-reports">
+                <p>暂无报告，请先运行搜索脚本生成报告</p>
+                <code>python skills/finance-system-news-search/search.py</code>
+            </section>
+            {% endif %}
+        </main>
+
+        <footer>
+            <p>数据来源：各省财政厅官方公众号</p>
+            <p>生成工具：NewsDigest - finance-system-news-search</p>
+        </footer>
+    </div>
+</body>
+</html>

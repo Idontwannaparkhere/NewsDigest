@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财政科学管理资讯汇总 - {{ date }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav>
+                <a href="/" class="nav-link">返回列表</a>
+                <a href="/latest" class="nav-link">最新报告</a>
+            </nav>
+            <h1>财政科学管理资讯汇总</h1>
+            <p class="report-date-header">{{ date }}</p>
+        </header>
+
+        <main class="report-content">
+            {{ content | safe }}
+        </main>
+
+        <footer>
+            <p>数据来源：各省财政厅官方公众号</p>
+            <p>生成工具：NewsDigest - finance-system-news-search</p>
+        </footer>
+    </div>
+</body>
+</html>
