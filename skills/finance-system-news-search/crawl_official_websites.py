@@ -199,6 +199,20 @@ def normalize_url(url, base_url):
     return urljoin(base_url, url)
 
 
+def is_same_domain(url, base_url):
+    """检查URL是否与base_url同域名"""
+    if not url or not base_url:
+        return False
+    try:
+        from urllib.parse import urlparse
+        url_domain = urlparse(url).netloc
+        base_domain = urlparse(base_url).netloc
+        # 允许子域名，如 www.czt.gd.gov.cn 和 czt.gd.gov.cn
+        return url_domain == base_domain or url_domain.endswith('.' + base_domain) or base_domain.endswith('.' + url_domain)
+    except:
+        return False
+
+
 def detect_news_columns(soup, base_url):
     """从首页自动探测新闻栏目"""
     columns = []
@@ -310,9 +324,14 @@ def parse_list_page(soup, base_url):
                 if not date_str and href:
                     date_str = extract_date(href)
 
+                full_url = normalize_url(href, base_url)
+                # 过滤外部链接（只保留当前网站域名的链接）
+                if not is_same_domain(full_url, base_url):
+                    continue
+
                 articles.append({
                     'title': title,
-                    'url': normalize_url(href, base_url),
+                    'url': full_url,
                     'date': date_str
                 })
 
@@ -335,10 +354,15 @@ def parse_list_page(soup, base_url):
             if chinese_count < len(title) * 0.3 and len(title) > 10:
                 continue
 
+            full_url = normalize_url(link.get('href'), base_url)
+            # 过滤外部链接
+            if not is_same_domain(full_url, base_url):
+                continue
+
             date_str = extract_date(li.get_text())
             articles.append({
                 'title': title,
-                'url': normalize_url(link.get('href'), base_url),
+                'url': full_url,
                 'date': date_str
             })
 
