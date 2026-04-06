@@ -12,6 +12,7 @@ import re
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import quote
+from tqdm import tqdm
 
 # 配置
 TEMP_DIR = "output/temp"
@@ -32,7 +33,7 @@ ACCOUNTS = [
     "厦门财政", "郑州财政", "长沙财政", "合肥财政", "济南财政",
 ]
 
-# 公众号与地区映射
+# 公众号与地区映射（财政系统官方公众号）
 ACCOUNT_REGION = {
     "浙江财政": "浙江省财政厅", "上海财政": "上海市财政局",
     "北京财政": "北京市财政局", "广东财政": "广东省财政厅",
@@ -53,6 +54,13 @@ ACCOUNT_REGION = {
     "厦门财政": "厦门市财政局", "郑州财政": "郑州市财政局",
     "长沙财政": "长沙市财政局", "合肥财政": "合肥市财政局",
     "济南财政": "济南市财政局",
+}
+
+# 财政媒体公众号（非官方但发布财政相关内容）
+MEDIA_ACCOUNTS = {
+    "财政科学": "财政科学杂志", "中国财政": "中国财政杂志",
+    "财政研究": "财政研究杂志", "地方财政研究": "地方财政研究杂志",
+    "新理财": "新理财杂志", "预算管理与会计": "预算管理与会计",
 }
 
 HEADERS = {
@@ -165,8 +173,17 @@ def search_sogou_wechat(query, max_results=10):
             desc_elem = item.select_one('.txt-box p')
             summary = desc_elem.get_text(strip=True) if desc_elem else ''
 
+            # 提取公众号来源（优先 .account，否则用 .s-p 的第一个文本节点）
             source_elem = item.select_one('.s-p .account')
-            source = source_elem.get_text(strip=True) if source_elem else ''
+            if source_elem:
+                source = source_elem.get_text(strip=True)
+            else:
+                sp_elem = item.select_one('.s-p')
+                if sp_elem:
+                    # .s-p 可能包含时间和公众号名，取第一个文本节点
+                    source = sp_elem.get_text(strip=True).split()[0] if sp_elem.get_text(strip=True) else ''
+                else:
+                    source = ''
 
             time_elem = item.select_one('.s-p .s2')
             datetime_str = time_elem.get_text(strip=True) if time_elem else ''
@@ -232,10 +249,9 @@ def main():
     all_articles = []
     year = datetime.now().year
 
-    # 搜狗微信搜索
-    print("\n搜狗微信搜索...")
-    for account in ACCOUNTS:
-        print(f"\n搜索: {account}")
+    # 搜狗微信搜索（带进度条）
+    print(f"\n搜狗微信搜索 {len(ACCOUNTS)} 个公众号:")
+    for account in tqdm(ACCOUNTS, desc="微信搜索进度", unit="公众号", ncols=80):
         for keyword in priority_keywords[:6]:
             query = f"{account} {keyword} {year}"
             articles = search_sogou_wechat(query, max_results=5)
@@ -246,9 +262,23 @@ def main():
                     continue
                 seen_urls.add(url_key)
 
-                article['source'] = account
-                article['region'] = ACCOUNT_REGION.get(account, '')
-                article['is_official'] = True
+                # 保留实际的公众号来源（搜狗返回的）
+                actual_source = article.get('source', '')
+                # 判断是否来自财政系统官方公众号或财政媒体
+                is_official = actual_source in ACCOUNT_REGION
+                is_media = actual_source in MEDIA_ACCOUNTS
+
+                # 只保留财政相关公众号的文章
+                if not is_official and not is_media:
+                    continue
+
+                article['search_account'] = account  # 记录搜索时用的公众号
+                if is_official:
+                    article['region'] = ACCOUNT_REGION.get(actual_source, '')
+                    article['is_official'] = True
+                else:
+                    article['region'] = MEDIA_ACCOUNTS.get(actual_source, '')
+                    article['is_official'] = False  # 媒体公众号标记为非官方
 
                 matched = match_pilot_task(article, pilot_tasks)
                 article['matched_tasks'] = matched
@@ -256,9 +286,36 @@ def main():
                 if matched:
                     all_articles.append(article)
 
-            time.sleep(1.5)
+            time.sleep(1.0)  # 减少间隔避免进度条太慢
 
-    print(f"\n共收集 {len(all_articles)} 篇相关文章")
+    print(f"\n共收集 {len(all_articles)} 篇相关文章（微信公众号）")
+
+    # 爬取官网资讯
+    print("\n爬取省级财政厅官网...")
+    try:
+        import crawl_official_websites
+        website_articles_path = crawl_official_websites.main()
+        if website_articles_path and os.path.exists(website_articles_path):
+            with open(website_articles_path, 'r', encoding='utf-8') as f:
+                website_data = json.load(f)
+                website_articles = website_data.get('articles', [])
+                print(f"官网文章: {len(website_articles)} 篇")
+
+                # 合并数据（按标题去重）
+                seen_titles = set()
+                for a in all_articles:
+                    title_key = re.sub(r'[^\w\u4e00-\u9fff]', '', a.get('title', '')).lower()
+                    seen_titles.add(title_key)
+
+                for a in website_articles:
+                    title_key = re.sub(r'[^\w\u4e00-\u9fff]', '', a.get('title', '')).lower()
+                    if title_key not in seen_titles:
+                        all_articles.append(a)
+                        seen_titles.add(title_key)
+
+                print(f"合并后总计: {len(all_articles)} 篇")
+    except Exception as e:
+        print(f"官网爬取失败: {str(e)[:50]}")
 
     # 统计各试点文章数
     task_counts = {}
